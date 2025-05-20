@@ -80,7 +80,7 @@ def download_channel():
                     for video in channel.videos:
                         if hasattr(video, 'watch_url'):
                             video_urls.append(video.watch_url)
-                            print(white(".", end="", flush=True))
+                            print(".", end="", flush=True)
                     print("\n")
                 except Exception as e:
                     print(red(f"\nError fetching videos: {e}"))

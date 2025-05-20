@@ -75,18 +75,15 @@ def download_audio():
             os.makedirs("temp", exist_ok=True)
 
             try:
-                # Create audio folder
                 safe_title = sanitize_filename(yt.title)
-                audio_path = os.path.join("YTDL", f"Audio [{'MP3' if choice == 1 else 'WAV'}] [{safe_title}]")
-                os.makedirs(audio_path, exist_ok=True)
+                temp_dir = create_hidden_temp_dir()
 
                 # Download WEBM audio
                 print(white("\nDownloading audio..."))
-                temp_path = stream.download(filename='audio_temp.webm', output_path=audio_path)
+                temp_path = stream.download(filename='audio_temp.webm', output_path=temp_dir)
 
                 if choice == 1:
-                    # Convert to MP3
-                    output_path = os.path.join(audio_path, f"{safe_title}.mp3")
+                    output_path = os.path.join("YTDL", f"{safe_title}.mp3")
                     command = [
                         get_ffmpeg_path(),
                         "-hide_banner",
@@ -102,7 +99,7 @@ def download_audio():
                     ]
                 else:  # choice == 2
                     # Convert to WAV
-                    output_path = os.path.join(audio_path, f"{safe_title}.wav")
+                    output_path = os.path.join("YTDL", f"{safe_title}.wav")
                     command = [
                         get_ffmpeg_path(),
                         "-hide_banner",
@@ -121,34 +118,12 @@ def download_audio():
                     print(light_green(f"\nDownload complete! {yt.title} saved in YTDL folder"))
                 except subprocess.CalledProcessError as e:
                     print(red(f"Error during conversion: {e}"))
-                    # Try alternative conversion method
-                    try:
-                        print(white("Trying alternative conversion method..."))
-                        alt_command = [
-                            get_ffmpeg_path(),
-                            "-hide_banner",
-                            "-loglevel", "error",
-                            "-i", temp_path,
-                            "-vn",  # No video
-                            "-acodec", "libmp3lame" if choice == 1 else "pcm_s16le",
-                            "-ar", "44100",
-                            "-ac", "2",
-                            "-y",
-                            output_path
-                        ]
-                        subprocess.run(alt_command, check=True, stderr=subprocess.DEVNULL)
-                        print(light_green(f"\nDownload complete! {yt.title} saved in YTDL folder"))
-                    except subprocess.CalledProcessError as e:
-                        print(red(f"Error during alternative conversion: {e}"))
                 finally:
-                    # Clean up temporary file
                     try:
                         os.remove(temp_path)
                     except:
                         pass
-
             finally:
-                # Clean up temp directory
                 try:
                     shutil.rmtree("temp")
                 except:
