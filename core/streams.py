@@ -3,16 +3,9 @@ import os
 import sys
 import shutil
 
-from core.utils import clear_screen, sanitize_filename, create_hidden_temp_dir
+from core.utils import clear_screen, sanitize_filename, create_hidden_temp_dir, format_size
 from ascii_art import display_ascii
-
-def format_size(size_bytes):
-    """Convert bytes to human readable format"""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} GB"
+from core.colors import white, red, light_green
 
 def show_all_streams():
     from app import homepage
@@ -20,9 +13,9 @@ def show_all_streams():
     while True:
         clear_screen()
         display_ascii("streams")
-        print("---->> ALL STREAMS <<----")
+        print(white("---=>> ALL STREAMS <<=---"))
 
-        url = input("\nEnter video URL [0 to exit, 9 to go back]: ")
+        url = input(white("\nEnter video URL [0 to exit, 9 to go back]: "))
         
         if url == "0":
             clear_screen()
@@ -38,17 +31,17 @@ def show_all_streams():
             clear_screen()
             display_ascii("streams")
 
-            print("---->> ALL STREAMS <<----")
-            print(f"\nTitle: {yt.title}")
-            print(f"Channel: {yt.author}")
-            print(f"Length: {yt.length // 60} minutes {yt.length % 60} seconds")
-            print("\nAvailable Streams:\n")
+            print(white("---=>> ALL STREAMS <<=---"))
+            print(white(f"\nTitle: {yt.title}"))
+            print(white(f"Channel: {yt.author}"))
+            print(white(f"Length: {yt.length // 60} minutes {yt.length % 60} seconds"))
+            print(white("\nAvailable Streams:\n"))
 
             # Get all available streams
             streams = yt.streams
             if not streams:
-                print("No streams available for this video.")
-                input("Press Enter to continue...")
+                print(red("No streams available for this video."))
+                input(white("Press Enter to continue..."))
                 continue
 
             # Display stream information
@@ -63,11 +56,11 @@ def show_all_streams():
                 mime = stream.mime_type or "---"
                 filesize = format_size(stream.filesize) if stream.filesize else "---"
 
-                print(f"itag: {stream.itag:<6} {stream_type:<12} {resolution:<10} {abr:<10} {mime:<12} {filesize:<10}")
+                print(white(f"itag: {stream.itag:<6} {stream_type:<12} {resolution:<10} {abr:<10} {mime:<12} {filesize:<10}"))
 
             # Get user choice
             try:
-                itag = int(input("\nEnter [itag] of the stream (0 to exit, 9 to go back): "))
+                itag = int(input(white("\nEnter [itag] of the stream (0 to exit, 9 to go back): ")))
                 if itag == 0:
                     clear_screen()
                     sys.exit(0)
@@ -75,8 +68,8 @@ def show_all_streams():
                     homepage()
                     return
             except ValueError:
-                print("Please enter a valid number.")
-                input("Press Enter to continue...")
+                print(red("Please enter a valid number."))
+                input(white("Press Enter to continue..."))
                 continue
 
             # Create required directories
@@ -87,14 +80,14 @@ def show_all_streams():
                 # Download the selected stream
                 stream = yt.streams.get_by_itag(itag)
                 if not stream:
-                    print("Error: Stream not found!")
+                    print(red("Error: Stream not found!"))
                     return
 
                 # Create downloads directory if it doesn't exist
                 os.makedirs("YTDL", exist_ok=True)
 
                 # Download the stream
-                print(f"\nDownloading: {yt.title} | itag: {itag}")
+                print(white(f"\nDownloading: {yt.title} | itag: {itag}"))
                 safe_title = sanitize_filename(yt.title)
                 file_extension = stream.mime_type.split('/')[-1]
                 output_path = stream.download(
@@ -102,15 +95,14 @@ def show_all_streams():
                     output_path="YTDL"
                 )
 
-                # print(f"\nDownload complete: {output_path}")
-                print(f"\nDownload complete!")
-                input("\nPress Enter to continue...")
+                print(light_green(f"\nDownload complete!"))
+                input(white("\nPress Enter to continue..."))
                 homepage()
                 return
 
             except Exception as e:
-                print(f"An error occurred: {e}")
-                input("Press Enter to continue...")
+                print(red(f"An error occurred: {e}"))
+                input(white("Press Enter to continue..."))
 
             finally:
                 # Clean up temp directory
@@ -120,5 +112,5 @@ def show_all_streams():
                     pass
 
         except Exception as e:
-            print(f"An error occurred: {e}")
-            input("Press Enter to continue...")
+            print(red(f"An error occurred: {e}"))
+            input(white("Press Enter to continue..."))

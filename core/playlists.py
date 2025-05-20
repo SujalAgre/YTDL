@@ -2,16 +2,9 @@ import os, subprocess, shutil
 import sys
 from pytubefix import Playlist, YouTube
 
-from core.utils import clear_screen, sanitize_filename, get_ffmpeg_path
+from core.utils import clear_screen, sanitize_filename, get_ffmpeg_path, create_hidden_temp_dir, format_size
 from ascii_art import display_ascii
-
-def format_size(size_bytes):
-    """Convert bytes to human readable format"""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} GB"
+from core.colors import white, red, light_green
 
 def download_playlist():
     from app import homepage
@@ -20,15 +13,15 @@ def download_playlist():
         clear_screen()
         display_ascii("playlist")
 
-        print("---->> DOWNLOAD PLAYLIST <<----")
+        print(white("---=>> DOWNLOAD PLAYLIST <<=---"))
 
-        print("\n-> 1: Download Videos")
-        print("-> 2: Download Audio")
-        print("\n-> 9: Back to Homepage")
-        print("-> 0: Exit")
+        print(white("\n-> 1: Download Videos"))
+        print(white("-> 2: Download Audio"))
+        print(white("\n-> 9: Back to Homepage"))
+        print(white("-> 0: Exit"))
         
         try:
-            choice = int(input("\nEnter your choice [0-2, 9]: "))
+            choice = int(input(white("\nEnter your choice [0-2, 9]: ")))
             
             if choice == 0:
                 clear_screen()
@@ -38,16 +31,16 @@ def download_playlist():
                 return
                 
             if choice not in [1, 2]:
-                print("Invalid choice. Please try again.")
-                input("Press Enter to continue...")
+                print(red("Invalid choice. Please try again."))
+                input(white("Press Enter to continue..."))
                 continue
 
             clear_screen()
             display_ascii("playlist")
 
-            print("---->> DOWNLOAD PLAYLIST <<----")
+            print(white("---=>> DOWNLOAD PLAYLIST <<=---"))
             
-            url = input("\nEnter playlist URL [0 to exit, 9 to go back]: ")
+            url = input(white("\nEnter playlist URL [0 to exit, 9 to go back]: "))
             if url == "0":
                 clear_screen()
                 sys.exit(0)
@@ -60,32 +53,32 @@ def download_playlist():
             # Get playlist details
             clear_screen()
             display_ascii("playlist")
-            print(f"Playlist: {playlist.title}")
-            print(f"Channel: {playlist.owner}")
-            print(f"Total Videos: {len(playlist.video_urls)}")
+            print(white(f"Playlist: {playlist.title}"))
+            print(white(f"Channel: {playlist.owner}"))
+            print(white(f"Total Videos: {len(playlist.video_urls)}"))
             
             if choice == 1:
-                print("\nSelected Format: MP4 Video")
+                print(white("\nSelected Format: MP4 Video"))
                 # Get sample streams from first video for size estimation
                 first_video = YouTube(playlist.video_urls[0])
                 video_stream = first_video.streams.filter(only_video=True, file_extension='mp4').order_by('resolution').desc().first()
                 audio_stream = first_video.streams.filter(only_audio=True, file_extension='webm').order_by('abr').desc().first()
                 if video_stream and audio_stream:
                     avg_size = (video_stream.filesize + audio_stream.filesize) * len(playlist.video_urls)
-                    print(f"Estimated Total Size: {format_size(avg_size)}")
+                    print(white(f"Estimated Total Size: {format_size(avg_size)}"))
             else:  # choice == 2
                 # Audio format submenu
                 clear_screen()
                 display_ascii("audio")
 
-                print("---->> SELECT AUDIO FORMAT <<----")
+                print(white("---=>> SELECT AUDIO FORMAT <<=---"))
 
-                print("\n-> 1: MP3 Audio [Smaller File Size]")
-                print("-> 2: WAV Audio [Higher Quality]")
-                print("\n-> 9: Back to Homepage")
-                print("-> 0: Exit")
+                print(white("\n-> 1: MP3 Audio [Smaller File Size]"))
+                print(white("-> 2: WAV Audio [Higher Quality]"))
+                print(white("\n-> 9: Back to Homepage"))
+                print(white("-> 0: Exit"))
                 
-                audio_choice = int(input("\nEnter your choice [0-2, 9]: "))
+                audio_choice = int(input(white("\nEnter your choice [0-2, 9]: ")))
                 if audio_choice == 0:
                     clear_screen()
                     sys.exit(0)
@@ -93,19 +86,19 @@ def download_playlist():
                     homepage()
                     return
                 if audio_choice not in [1, 2]:
-                    print("Invalid choice. Please try again.")
-                    input("Press Enter to continue...")
+                    print(red("Invalid choice. Please try again."))
+                    input(white("Press Enter to continue..."))
                     return
                 
-                print(f"\nSelected Format: {'MP3' if audio_choice == 1 else 'WAV'} Audio")
+                print(white(f"\nSelected Format: {'MP3' if audio_choice == 1 else 'WAV'} Audio"))
                 # Get sample stream from first video for size estimation
                 first_video = YouTube(playlist.video_urls[0])
                 audio_stream = first_video.streams.filter(only_audio=True, file_extension='webm').order_by('abr').desc().first()
                 if audio_stream:
                     avg_size = audio_stream.filesize * len(playlist.video_urls)
-                    print(f"Estimated Total Size: {format_size(avg_size)}")
+                    print(white(f"Estimated Total Size: {format_size(avg_size)}"))
             
-            proceed = input("\nProceed with download? (y/n): ").lower()
+            proceed = input(white("\nProceed with download? (y/n): ")).lower()
             if proceed != 'y':
                 return
 
@@ -126,29 +119,36 @@ def download_playlist():
                 os.makedirs(playlist_path, exist_ok=True)
 
                 total_videos = len(playlist.video_urls)
-                print(f"\nFound {total_videos} videos in playlist")
+                print(white(f"\nFound {total_videos} videos in playlist"))
 
-                for index, video_url in enumerate(playlist.video_urls, 1):
+                for i, video_url in enumerate(playlist.video_urls, 1):
                     try:
                         yt = YouTube(video_url)
                         safe_title = sanitize_filename(yt.title)
-                        print(f"\nDownloading {index}/{total_videos}: {safe_title}")
+                        
+                        print(white(f"\nProcessing video {i}/{total_videos}: {yt.title}"))
 
                         if choice == 1:
-                            # Download highest quality video
+                            # Get highest resolution video-only stream
                             video_stream = yt.streams.filter(only_video=True, file_extension='mp4').order_by('resolution').desc().first()
-                            audio_stream = yt.streams.filter(only_audio=True, file_extension='webm').order_by('abr').desc().first()
-
-                            if not video_stream or not audio_stream:
-                                print("No suitable streams found for this video.")
+                            if not video_stream:
+                                print(red("No suitable video stream found."))
                                 continue
 
-                            # Download video and audio
+                            # Get highest quality audio-only stream
+                            audio_stream = yt.streams.filter(only_audio=True, file_extension='webm').order_by('abr').desc().first()
+                            if not audio_stream:
+                                print(red("No suitable audio stream found."))
+                                continue
+
+                            # Download paths
                             video_path = video_stream.download(filename='video_temp.mp4', output_path='temp')
                             audio_path = audio_stream.download(filename='audio_temp.webm', output_path='temp')
 
+                            # Set output path
+                            output_path = os.path.join(playlist_path, f"{safe_title}.mp4")
+
                             # Merge using FFmpeg
-                            output_path = os.path.join(playlist_path, f"{index:02d} - {safe_title}.mp4")
                             command = [
                                 get_ffmpeg_path(),
                                 "-hide_banner",
@@ -160,14 +160,15 @@ def download_playlist():
                                 "-b:a", "192k",  # Set audio bitrate
                                 "-ar", "44100",  # Set audio sample rate
                                 "-strict", "experimental",
+                                "-y",  # Overwrite output file if exists
                                 output_path
                             ]
 
                             try:
                                 subprocess.run(command, check=True, stderr=subprocess.DEVNULL)
-                                # print(f"Downloaded: {output_path}")
+                                print(light_green(f"Downloaded {yt.title} in YTDL folder"))
                             except subprocess.CalledProcessError as e:
-                                print(f"Error occurred during merge: {e}")
+                                print(red(f"Error occurred during merge: {e}"))
                             finally:
                                 # Clean up temporary files
                                 try:
@@ -180,15 +181,15 @@ def download_playlist():
                             # Get highest quality audio stream
                             stream = yt.streams.filter(only_audio=True, file_extension='webm').order_by('abr').desc().first()
                             if not stream:
-                                print("No suitable audio stream found.")
+                                print(red("No suitable audio stream found."))
                                 continue
 
                             # Download WEBM audio
                             temp_path = stream.download(filename='audio_temp.webm', output_path='temp')
-                            
+
                             if audio_choice == 1:
                                 # Convert to MP3
-                                output_path = os.path.join(playlist_path, f"{index:02d} - {safe_title}.mp3")
+                                output_path = os.path.join(playlist_path, f"{safe_title}.mp3")
                                 command = [
                                     get_ffmpeg_path(),
                                     "-hide_banner",
@@ -199,32 +200,33 @@ def download_playlist():
                                     "-qscale:a", "0",          # Highest quality (VBR)
                                     "-ar", "44100",           # Set audio sample rate
                                     "-ac", "2",               # Stereo
+                                    "-y",  # Overwrite output file if exists
                                     output_path
                                 ]
                             else:  # audio_choice == 2
                                 # Convert to WAV
-                                output_path = os.path.join(playlist_path, f"{index:02d} - {safe_title}.wav")
+                                output_path = os.path.join(playlist_path, f"{safe_title}.wav")
                                 command = [
                                     get_ffmpeg_path(),
                                     "-hide_banner",
                                     "-loglevel", "error",
                                     "-i", temp_path,
                                     "-vn",  # No video
-                                    "-acodec", "pcm_s16le",  # PCM 16-bit encoding
-                                    "-ar", "44100",          # 44.1kHz sample rate
+                                    "-acodec", "pcm_s16le",  # Use PCM WAV encoder
+                                    "-ar", "44100",          # Set audio sample rate
                                     "-ac", "2",              # Stereo
+                                    "-y",  # Overwrite output file if exists
                                     output_path
                                 ]
 
                             try:
-                                # print(f"Converting to {os.path.splitext(output_path)[1][1:].upper()}...")
                                 subprocess.run(command, check=True, stderr=subprocess.DEVNULL)
-                                # print(f"Downloaded {yt.title} in YTDL folder")
+                                print(light_green(f"Downloaded {yt.title} in YTDL folder"))
                             except subprocess.CalledProcessError as e:
-                                print(f"Error during conversion: {e}")
+                                print(red(f"Error during conversion: {e}"))
                                 # Try alternative conversion method
                                 try:
-                                    print("Trying alternative conversion method...")
+                                    print(white("Trying alternative conversion method..."))
                                     alt_command = [
                                         get_ffmpeg_path(),
                                         "-hide_banner",
@@ -237,9 +239,9 @@ def download_playlist():
                                         output_path
                                     ]
                                     subprocess.run(alt_command, check=True, stderr=subprocess.DEVNULL)
-                                    print(f"Downloaded {yt.title} in YTDL folder")
+                                    print(light_green(f"Downloaded {yt.title} in YTDL folder"))
                                 except subprocess.CalledProcessError as e:
-                                    print(f"Error during alternative conversion: {e}")
+                                    print(red(f"Error during alternative conversion: {e}"))
                             finally:
                                 # Clean up temporary file
                                 try:
@@ -248,10 +250,10 @@ def download_playlist():
                                     pass
 
                     except Exception as e:
-                        print(f"Error processing video: {e}")
+                        print(red(f"Error processing video: {e}"))
                         continue
 
-                print("\nPlaylist download complete!")
+                print(light_green("\nPlaylist download complete!"))
 
             finally:
                 # Clean up temp directory
@@ -260,13 +262,13 @@ def download_playlist():
                 except:
                     pass
 
-            input("Press Enter to continue...")
+            input(white("Press Enter to continue..."))
             continue
 
         except ValueError:
-            print("Please enter a valid number.")
-            input("Press Enter to continue...")
+            print(red("Please enter a valid number."))
+            input(white("Press Enter to continue..."))
         except Exception as e:
-            print(f"An error occurred: {e}")
-            input("Press Enter to continue...")
+            print(red(f"An error occurred: {e}"))
+            input(white("Press Enter to continue..."))
 

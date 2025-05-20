@@ -2,16 +2,9 @@ from pytubefix import YouTube
 import os, subprocess, shutil
 import sys
 
-from core.utils import clear_screen, sanitize_filename, get_ffmpeg_path, create_hidden_temp_dir
+from core.utils import clear_screen, sanitize_filename, get_ffmpeg_path, create_hidden_temp_dir, format_size
 from ascii_art import display_ascii
-
-def format_size(size_bytes):
-    """Convert bytes to human readable format"""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} GB"
+from core.colors import white, red, light_green
 
 def download_video():
     from app import homepage
@@ -20,9 +13,9 @@ def download_video():
         clear_screen()
         display_ascii("video")
 
-        print("---->> DOWNLOAD VIDEO <<----")
+        print(white("---=>> DOWNLOAD VIDEO <<=---"))
         
-        url = input("\nEnter video URL [0 to exit, 9 to go back]: ")
+        url = input(white("\nEnter video URL [0 to exit, 9 to go back]: "))
         
         if url == "0":
             clear_screen()
@@ -37,30 +30,30 @@ def download_video():
             # Get video details
             clear_screen()
             display_ascii("video")
-            print(f"Title: {yt.title}")
-            print(f"Channel: {yt.author}")
-            print(f"Length: {yt.length // 60} minutes {yt.length % 60} seconds")
-            print("\nSelected Streams:")
+            print(white(f"Title: {yt.title}"))
+            print(white(f"Channel: {yt.author}"))
+            print(white(f"Length: {yt.length // 60} minutes {yt.length % 60} seconds"))
+            print(white("\nSelected Streams:"))
             
             # Get highest resolution video-only stream
             video_stream = yt.streams.filter(only_video=True, file_extension='mp4').order_by('resolution').desc().first()
             if not video_stream:
-                print("No suitable video stream found.")
-                input("Press Enter to continue...")
+                print(red("No suitable video stream found."))
+                input(white("Press Enter to continue..."))
                 continue
 
             # Get highest quality audio-only stream
             audio_stream = yt.streams.filter(only_audio=True, file_extension='webm').order_by('abr').desc().first()
             if not audio_stream:
-                print("No suitable audio stream found.")
-                input("Press Enter to continue...")
+                print(red("No suitable audio stream found."))
+                input(white("Press Enter to continue..."))
                 continue
 
-            print(f"Video: {video_stream.resolution} ({format_size(video_stream.filesize)})")
-            print(f"Audio: {audio_stream.abr} ({format_size(audio_stream.filesize)})")
-            print(f"Total Size: {format_size(video_stream.filesize + audio_stream.filesize)}")
+            print(white(f"Video: {video_stream.resolution} ({format_size(video_stream.filesize)})"))
+            print(white(f"Audio: {audio_stream.abr} ({format_size(audio_stream.filesize)})"))
+            print(white(f"Total Size: {format_size(video_stream.filesize + audio_stream.filesize)}"))
             
-            proceed = input("\nProceed with download? (y/n): ").lower()
+            proceed = input(white("\nProceed with download? (y/n): ")).lower()
             if proceed != 'y':
                 continue
 
@@ -70,7 +63,7 @@ def download_video():
 
             try:
                 # Download paths
-                print("\nDownloading video...")
+                print(white("\nDownloading video..."))
                 video_temp = video_stream.download(filename='video_temp.mp4', output_path=temp_dir)
                 audio_temp = audio_stream.download(filename='audio_temp.webm', output_path=temp_dir)
 
@@ -96,9 +89,9 @@ def download_video():
                 
                 try:
                     subprocess.run(command, check=True, stderr=subprocess.DEVNULL)
-                    print(f"\nDownload complete! {yt.title} saved in YTDL folder")
+                    print(light_green(f"\nDownload complete! {yt.title} saved in YTDL folder"))
                 except subprocess.CalledProcessError as e:
-                    print(f"Error occurred during merge: {e}")
+                    print(red(f"Error occurred during merge: {e}"))
                 finally:
                     # Clean up temporary files
                     try:
@@ -114,13 +107,13 @@ def download_video():
                 except:
                     pass
 
-            input("\nPress Enter to continue...")
+            input(white("\nPress Enter to continue..."))
             continue
 
         except ValueError:
-            print("Please enter a valid URL.")
-            input("Press Enter to continue...")
+            print(red("Please enter a valid URL."))
+            input(white("Press Enter to continue..."))
         except Exception as e:
-            print(f"An error occurred: {e}")
-            input("Press Enter to continue...")
+            print(red(f"An error occurred: {e}"))
+            input(white("Press Enter to continue..."))
 

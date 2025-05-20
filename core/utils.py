@@ -43,3 +43,11 @@ def create_hidden_temp_dir():
     temp_dir = "temp"
     os.makedirs(temp_dir, exist_ok=True)
     return temp_dir
+
+def format_size(size_bytes):
+    """Convert bytes to human readable format."""
+    for unit in ['B', 'KB', 'MB', 'GB']:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.1f} GB"

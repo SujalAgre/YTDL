@@ -2,16 +2,9 @@ from pytubefix import YouTube
 import os, subprocess, shutil
 import sys
 
-from core.utils import clear_screen, sanitize_filename, get_ffmpeg_path, create_hidden_temp_dir
+from core.utils import clear_screen, sanitize_filename, get_ffmpeg_path, create_hidden_temp_dir, format_size
 from ascii_art import display_ascii
-
-def format_size(size_bytes):
-    """Convert bytes to human readable format"""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024.0:
-            return f"{size_bytes:.1f} {unit}"
-        size_bytes /= 1024.0
-    return f"{size_bytes:.1f} GB"
+from core.colors import white, red, light_green
 
 def download_audio():
     from app import homepage
@@ -20,15 +13,15 @@ def download_audio():
         clear_screen()
         display_ascii("audio")
 
-        print("---->> DOWNLOAD AUDIO <<----")
+        print(white("---=>> DOWNLOAD AUDIO <<=---"))
 
-        print("\n-> 1: Download MP3 Audio [Smaller File Size]")
-        print("-> 2: Download WAV Audio [Higher Quality]")
-        print("\n-> 9: Back to Homepage")
-        print("-> 0: Exit")
+        print(white("\n-> 1: Download MP3 Audio [Smaller File Size]"))
+        print(white("-> 2: Download WAV Audio [Higher Quality]"))
+        print(white("\n-> 9: Back to Homepage"))
+        print(white("-> 0: Exit"))
         
         try:
-            choice = int(input("\nEnter your choice [0-2, 9]: "))
+            choice = int(input(white("\nEnter your choice [0-2, 9]: ")))
             
             if choice == 0:
                 clear_screen()
@@ -38,14 +31,14 @@ def download_audio():
                 return
                 
             if choice not in [1, 2]:
-                print("Invalid choice. Please try again.")
-                input("Press Enter to continue...")
+                print(red("Invalid choice. Please try again."))
+                input(white("Press Enter to continue..."))
                 continue
 
             clear_screen()
             display_ascii("audio")
             
-            url = input("Enter video URL [0 to exit, 9 to go back]: ")
+            url = input(white("Enter video URL [0 to exit, 9 to go back]: "))
             if url == "0":
                 clear_screen()
                 sys.exit(0)
@@ -58,22 +51,22 @@ def download_audio():
             # Get audio details
             clear_screen()
             display_ascii("audio")
-            print(f"Title: {yt.title}")
-            print(f"Channel: {yt.author}")
-            print(f"Length: {yt.length // 60} minutes {yt.length % 60} seconds")
-            print("\nSelected Stream:")
+            print(white(f"Title: {yt.title}"))
+            print(white(f"Channel: {yt.author}"))
+            print(white(f"Length: {yt.length // 60} minutes {yt.length % 60} seconds"))
+            print(white("\nSelected Stream:"))
             
             # Get highest quality audio stream
             stream = yt.streams.filter(only_audio=True, file_extension='webm').order_by('abr').desc().first()
             if not stream:
-                print("No suitable audio stream found.")
-                input("Press Enter to continue...")
+                print(red("No suitable audio stream found."))
+                input(white("Press Enter to continue..."))
                 return
 
-            print(f"Audio: {stream.abr} ({format_size(stream.filesize)})")
-            print(f"Format: {'MP3' if choice == 1 else 'WAV'}")
+            print(white(f"Audio: {stream.abr} ({format_size(stream.filesize)})"))
+            print(white(f"Format: {'MP3' if choice == 1 else 'WAV'}"))
             
-            proceed = input("\nProceed with download? (y/n): ").lower()
+            proceed = input(white("\nProceed with download? (y/n): ")).lower()
             if proceed != 'y':
                 return
 
@@ -88,7 +81,7 @@ def download_audio():
                 os.makedirs(audio_path, exist_ok=True)
 
                 # Download WEBM audio
-                print("\nDownloading audio...")
+                print(white("\nDownloading audio..."))
                 temp_path = stream.download(filename='audio_temp.webm', output_path=audio_path)
 
                 if choice == 1:
@@ -116,8 +109,8 @@ def download_audio():
                         "-loglevel", "error",
                         "-i", temp_path,
                         "-vn",  # No video
-                        "-acodec", "pcm_s16le",  # PCM 16-bit encoding
-                        "-ar", "44100",          # 44.1kHz sample rate
+                        "-acodec", "pcm_s16le",  # Use PCM WAV encoder
+                        "-ar", "44100",          # Set audio sample rate
                         "-ac", "2",              # Stereo
                         "-y",  # Overwrite output file if exists
                         output_path
@@ -125,12 +118,12 @@ def download_audio():
 
                 try:
                     subprocess.run(command, check=True, stderr=subprocess.DEVNULL)
-                    print(f"\nDownload complete! {yt.title} saved in YTDL folder")   
+                    print(light_green(f"\nDownload complete! {yt.title} saved in YTDL folder"))
                 except subprocess.CalledProcessError as e:
-                    print(f"Error during conversion: {e}")
+                    print(red(f"Error during conversion: {e}"))
                     # Try alternative conversion method
                     try:
-                        print("Trying alternative conversion method...")
+                        print(white("Trying alternative conversion method..."))
                         alt_command = [
                             get_ffmpeg_path(),
                             "-hide_banner",
@@ -144,9 +137,9 @@ def download_audio():
                             output_path
                         ]
                         subprocess.run(alt_command, check=True, stderr=subprocess.DEVNULL)
-                        print(f"\nDownload complete! {yt.title} saved in YTDL folder")
+                        print(light_green(f"\nDownload complete! {yt.title} saved in YTDL folder"))
                     except subprocess.CalledProcessError as e:
-                        print(f"Error during alternative conversion: {e}")
+                        print(red(f"Error during alternative conversion: {e}"))
                 finally:
                     # Clean up temporary file
                     try:
@@ -161,12 +154,12 @@ def download_audio():
                 except:
                     pass
 
-            input("\nPress Enter to continue...")
+            input(white("\nPress Enter to continue..."))
             continue
 
         except ValueError:
-            print("Please enter a valid number.")
-            input("Press Enter to continue...")
+            print(red("Please enter a valid number."))
+            input(white("Press Enter to continue..."))
         except Exception as e:
-            print(f"An error occurred: {e}")
-            input("Press Enter to continue...")
+            print(red(f"An error occurred: {e}"))
+            input(white("Press Enter to continue..."))
