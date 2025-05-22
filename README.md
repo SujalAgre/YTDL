@@ -16,6 +16,9 @@ Terminal based YouTube Downloader
 - **Fast performance**  
   Runs entirely locally for fast and efficient downloading.
 
+## Download
+- [Windows](https://github.com/SujalAgre/YTDL/releases/download/v1.0/YTDL.exe)
+
 ## Tech Stack
 - **Python**
 - **[pytubefix](https://github.com/Animenosekai/pytubefix)**
